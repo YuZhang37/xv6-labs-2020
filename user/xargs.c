@@ -10,21 +10,16 @@ get_line_from_input(char* buff, int size) {
     *p = 0;
     char ch = 'a';
     if (read(0, &ch, 1) <= 0) {
-        // fprintf(2, "Error in get_line_from_input: read init\n");
         return -1;
     }
-    if (ch == 0) {
-        return 0;
-    }
+
     while (ch != '\n') {
         *p++ = ch;
         *p = 0;
         if (p - buff >= size) {
-            // fprintf(2, "Error in get_line_from_input: buff overflow\n");
             return -1;
         }
         if (read(0, &ch, 1) <= 0) {
-            // fprintf(2, "Error in get_line_from_input: read\n");
             return -1;
         }
     }
@@ -97,7 +92,6 @@ main(int argc, char** argv) {
         exit(1);
     }
     while(get_line_from_input(buff, 1024) > 0) {
-        // fprintf(1, "line: %s\n", buff);
         parse_line(buff, argvs, argc, MAXARG, size);
         char* exec_args[MAXARG + 1];
         memset(exec_args, 0, sizeof exec_args);
@@ -105,7 +99,6 @@ main(int argc, char** argv) {
             if (strlen(argvs[i]) == 0) {
                 break;
             }
-            // fprintf(1, "argvs: %s, size: %d\n", argvs[i], strlen(argvs[i]));
             exec_args[i] = argvs[i];
         }
         int rc = fork();
@@ -114,7 +107,7 @@ main(int argc, char** argv) {
             exit(1);
         }
         if (rc == 0) {
-            //child process
+            // child process
             if (exec(argv[1], exec_args + 1) < 0) {
                 fprintf(2, "Error in xargs: exec\n");
                 exit(1);
