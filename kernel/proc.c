@@ -695,3 +695,19 @@ procdump(void)
     printf("\n");
   }
 }
+
+
+int
+set_nproc(uint64* nproc) {
+  struct proc *p;
+  uint64 unused_procs = 0;
+  
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->state != UNUSED) {
+      unused_procs++;
+    }
+  }
+  
+  *nproc = unused_procs;
+  return 0;
+}

@@ -105,3 +105,15 @@ sys_trace(void)
   myproc()->trace_mask = bit_mask;
   return 0;
 }
+
+
+uint64
+sys_sysinfo(void)
+{
+  uint64 psi; // user pointer to struct sysinfo
+
+  if(argaddr(0, &psi) < 0)
+    return -1;
+  return fill_sysinfo(psi);
+}
+
