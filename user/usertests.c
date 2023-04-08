@@ -2225,7 +2225,9 @@ sbrkarg(char *s)
   int fd, n;
 
   a = sbrk(PGSIZE);
+
   fd = open("sbrk", O_CREATE|O_WRONLY);
+
   unlink("sbrk");
   if(fd < 0)  {
     printf("%s: open sbrk failed\n", s);
@@ -2239,6 +2241,7 @@ sbrkarg(char *s)
 
   // test writes to allocated memory
   a = sbrk(PGSIZE);
+
   if(pipe((int *) a) != 0){
     printf("%s: pipe() failed\n", s);
     exit(1);
@@ -2698,7 +2701,7 @@ main(int argc, char *argv[])
     {reparent2, "reparent2"},
     {pgbug, "pgbug" },
     {sbrkbugs, "sbrkbugs" },
-    // {badwrite, "badwrite" },
+    {badwrite, "badwrite" },
     {badarg, "badarg" },
     {reparent, "reparent" },
     {twochildren, "twochildren"},

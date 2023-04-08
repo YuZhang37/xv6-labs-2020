@@ -490,11 +490,11 @@ writei(struct inode *ip, int user_src, uint64 src, uint off, uint n)
     return -1;
   if(off + n > MAXFILE*BSIZE)
     return -1;
-
   for(tot=0; tot<n; tot+=m, off+=m, src+=m){
     bp = bread(ip->dev, bmap(ip, off/BSIZE));
     m = min(n - tot, BSIZE - off%BSIZE);
-    if(either_copyin(bp->data + (off % BSIZE), user_src, src, m) == -1) {
+    int rc = either_copyin(bp->data + (off % BSIZE), user_src, src, m);
+    if(rc == -1) {
       brelse(bp);
       n = -1;
       break;

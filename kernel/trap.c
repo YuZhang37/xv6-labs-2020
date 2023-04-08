@@ -35,7 +35,7 @@ trapinithart(void)
 //
 void
 usertrap(void)
-{
+{ 
   int which_dev = 0;
 
   if((r_sstatus() & SSTATUS_SPP) != 0)
@@ -50,7 +50,8 @@ usertrap(void)
   // save user program counter.
   p->trapframe->epc = r_sepc();
   
-  if(r_scause() == 8){
+  int scause = r_scause();
+  if(scause == 8){
     // system call
 
     if(p->killed)
@@ -67,20 +68,61 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if (scause == 13 || scause == 15){
+    int rc = lazy_allocate(r_stval(), "usertrap: ", 1);
+    if (rc < 0) {
+      p->killed = 1;
+      exit(-1);
+    }
   } else {
-    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+    printf("unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;
   }
 
-  if(p->killed)
+  if(p->killed) {
     exit(-1);
+  }
 
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
     yield();
 
   usertrapret();
+}
+
+
+int
+lazy_allocate(uint64 va, char *message, int msg_enabled) 
+{ 
+  struct proc *p = myproc();
+  uint64 sp = PGROUNDUP(p->trapframe->sp);
+  if (va >= p->sz || va < sp) {
+    if (msg_enabled) {
+      printf("%s invalid page fault scause %p pid=%d\n", message, r_scause(), p->pid);
+      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    }
+    return -1;
+  }
+  uint64 page_addr = PGROUNDDOWN(va);
+  char *mem = kalloc();
+  if(mem == 0){
+    if (msg_enabled) {
+      printf("%s kalloc scause %p pid=%d\n", message, r_scause(), p->pid);
+      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    }
+    return -1;
+  }
+  memset(mem, 0, PGSIZE);
+  if(mappages(p->pagetable, page_addr, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
+    kfree(mem);
+    if (msg_enabled) {
+      printf("%s mappages scause %p pid=%d\n", message, r_scause(), p->pid);
+      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    }
+    return -1;
+  }
+  return 0;
 }
 
 //
@@ -132,7 +174,8 @@ usertrapret(void)
 // on whatever the current kernel stack is.
 void 
 kerneltrap()
-{
+{ 
+  
   int which_dev = 0;
   uint64 sepc = r_sepc();
   uint64 sstatus = r_sstatus();
@@ -147,6 +190,10 @@ kerneltrap()
     printf("scause %p\n", scause);
     printf("sepc=%p stval=%p\n", r_sepc(), r_stval());
     panic("kerneltrap");
+  }
+
+  if (scause == 13 || scause == 15) {
+    printf("kerneltrap is called!\n");
   }
 
   // give up the CPU if this is a timer interrupt.
